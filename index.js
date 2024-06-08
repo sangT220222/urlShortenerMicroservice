@@ -15,11 +15,6 @@ app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 
-// Your first API endpoint
-app.get('/api/hello', function(req, res) {
-  res.json({ greeting: 'hello API' });
-});
-
 // In-memory storage for URLs - best practice would be to use a database
 let url_database = {};
 let url_count = 1;
@@ -30,21 +25,31 @@ app.post('/api/shorturl', (req,res) => {
     new URL(original_url);
   }catch(e){
     return res.json( { error: 'invalid url' });
+    // return res.status(400);
   }
-  const short_url = url_count++;
-  url_database[short_url] = original_url;
-  res.json({ original_url : original_url, short_url : short_url});
+
+  const hostname = new URL(original_url).hostname;
+  dns.lookup(hostname, (err) => { //dns is used to verify valid URL format
+    if(err){
+      return res.json( { error: 'invalid url' });
+      // return res.status(400);
+    }else{
+      const short_url = url_count++;
+      url_database[short_url] = original_url;
+      res.json({ original_url : original_url, short_url : short_url});
+    }
+  })
 });
 
 app.get('/api/shorturl/:shorturl', (req,res) => {
   const short_url = req.params.shorturl;
-  console.log(short_url);
   const original_url = url_database[short_url]; //locating original url with short_url as key
   
   if(original_url){
     res.redirect(original_url);
   }else{
     return res.json( { error: 'invalid url' });
+    // return res.status(400);
   }
 });
 
